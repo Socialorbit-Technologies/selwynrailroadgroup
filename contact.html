@@ -2,9 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Contact | Selwyn Rail Road</title>
 <meta name="description" content="Contact Selwyn Rail Road at +1 (407) 760-8000 for 24/7 emergency response, project quotes, shipping and customer service.">
+
 <link rel="canonical" href="https://selwynrailroadgroup.com/contact.html">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#1b2126">
@@ -17,6 +19,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@400;600;700&display=swap">
 <link rel="stylesheet" href="styles.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Selwyn Rail Road","url":"https://selwynrailroadgroup.com/","logo":"https://selwynrailroadgroup.com/favicon.svg","telephone":"+1-407-760-8000","contactPoint":[{"@type":"ContactPoint","telephone":"+1-407-760-8000","contactType":"customer service","areaServed":"US","availableLanguage":"English","hoursAvailable":{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],"opens":"00:00","closes":"23:59"}},{"@type":"ContactPoint","telephone":"+1-407-760-8000","contactType":"emergency","areaServed":"US"}]}</script>
 </head>
 <body>
 <div class="alert-strip"><div class="wrap"><span>24/7 derailment &amp; emergency response</span><a href="tel:+14077608000" class="phone">+1 (407) 760-8000</a></div></div>
@@ -40,7 +43,7 @@
 <div class="row"><a class="btn btn-signal" href="tel:+14077608000">Call now</a><button class="btn copy-btn" type="button" data-copy="+1 (407) 760-8000" data-copy-target="phone-number">Copy number</button></div>
 </div>
 
-<form class="form" id="contact-form" novalidate>
+<form class="form" id="contact-form" action="contact.php" method="post" novalidate>
 <div><h2 style="font-size:2rem">Send a message</h2><p style="color:var(--muted);margin-top:6px">We'll get back to you during business hours.</p></div>
 <div class="two">
 <div class="field"><label for="first-name">First name</label><input id="first-name" name="first_name" autocomplete="given-name" required></div>
@@ -56,7 +59,9 @@
 </div>
 <div class="field"><label for="service">How can we help?</label><select id="service" name="service"><option value="">Choose a service</option><option>Rail shipping & logistics</option><option>Industrial switching</option><option>Railcar storage & cleaning</option><option>Transloading</option><option>Distribution centers</option><option>Material supply</option><option>Industrial development</option><option>Track construction</option><option>Track maintenance</option><option>Track inspection</option><option>Railcar repair</option><option>Locomotive repair</option><option>Signaling</option><option>Emergency response</option><option>Careers</option><option>Something else</option></select></div>
 <div class="field"><label for="message">Message</label><textarea id="message" name="message" required></textarea></div>
-<div><button class="btn btn-signal" type="submit">Send message</button></div>
+<div class="hp" aria-hidden="true"><label for="website-url">Leave this field empty</label><input id="website-url" name="website_url" tabindex="-1" autocomplete="off"></div>
+<input type="hidden" name="started" id="form-started" value="">
+<div><button class="btn btn-signal" type="submit" id="form-submit">Send message</button></div>
 <p class="form-note" id="form-note" role="status" hidden></p>
 </form>
 </div></section>

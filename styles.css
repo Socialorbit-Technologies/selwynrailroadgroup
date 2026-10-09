@@ -213,3 +213,8 @@ td:first-child { font-weight: 700; white-space: nowrap; }
   .brand-name { font-size: 1.25rem; }
   .brand-name small { display: none; }
 }
+/* Contact form: spam trap field stays out of sight; result note states */
+.hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.form-note[data-state="ok"] { background: color-mix(in srgb, var(--pullman) 22%, transparent); }
+.form-note[data-state="error"] { background: color-mix(in srgb, #c0392b 18%, transparent); }
+.form button[disabled] { opacity: .6; cursor: progress; }

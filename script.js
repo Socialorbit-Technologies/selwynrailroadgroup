@@ -28,17 +28,39 @@
     });
   });
 
-  // Contact form.
-  // DEVELOPER NOTE: this form has no backend yet. Point it at your form handler
-  // (e.g. a PHP mailer, Formspree, HubSpot or your CRM) and replace the message below.
+  // Contact form: posts to contact.php (works without JavaScript too).
   var form = document.getElementById('contact-form');
   if (form) {
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var note = document.getElementById('form-note');
-      if (!form.checkValidity()) { form.reportValidity(); return; }
+    var note = document.getElementById('form-note');
+    var started = document.getElementById('form-started');
+    var submit = document.getElementById('form-submit');
+    if (started) started.value = String(Date.now());
+
+    var show = function (ok, msg) {
       note.hidden = false;
-      note.textContent = 'This form is not connected to an inbox yet, so your message was not sent. Please call +1 (407) 760-8000 and our team will help you right away.';
+      note.dataset.state = ok ? 'ok' : 'error';
+      note.textContent = msg;
+    };
+
+    // Result after a no-JavaScript submit redirects back here.
+    var q = location.search;
+    if (q.indexOf('sent=1') > -1) show(true, 'Thanks. Your message has been sent. We will reply during business hours. For anything urgent, call +1 (407) 760-8000.');
+    if (q.indexOf('error=1') > -1) show(false, 'Your message could not be sent. Please call +1 (407) 760-8000.');
+
+    form.addEventListener('submit', function (e) {
+      if (!form.checkValidity()) { e.preventDefault(); form.reportValidity(); return; }
+      if (!window.fetch || !window.FormData) return; // let the browser post normally
+      e.preventDefault();
+      submit.disabled = true;
+      submit.textContent = 'Sending…';
+      fetch(form.action, { method: 'POST', body: new FormData(form), headers: { Accept: 'application/json' } })
+        .then(function (r) { return r.json().catch(function () { return { ok: false, message: 'Your message could not be sent. Please call +1 (407) 760-8000.' }; }); })
+        .then(function (res) {
+          show(!!res.ok, res.message);
+          if (res.ok) form.reset();
+        })
+        .catch(function () { show(false, 'Your message could not be sent. Please check your connection or call +1 (407) 760-8000.'); })
+        .then(function () { submit.disabled = false; submit.textContent = 'Send message'; if (started) started.value = String(Date.now()); });
     });
   }
 })();
