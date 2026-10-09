@@ -1,18 +1,21 @@
 /* Layout: full-width bands stacked like rail cars; content on a 1180px track with a 16px+ gutter.
-   Track-tie rule (repeating ties) separates major bands. */
+   Track-tie rule (repeating ties) separates major bands. Light, single theme; crossing-signal red accent. */
 :root {
-  --ink: #15191d;          /* rail steel, near-black with blue bias */
-  --paper: #f3f4f2;        /* ballast-washed off-white */
+  --ink: #1f1a1b;          /* near-black, warm */
+  --paper: #f7f4f3;        /* light warm grey page */
   --surface: #ffffff;
-  --muted: #5b646c;        /* weathered steel grey */
-  --line: #d7dbdd;
-  --signal: #e8a317;       /* railroad safety yellow */
-  --signal-ink: #15191d;   /* text on signal */
-  --pullman: #1f4d3a;      /* heritage Pullman green */
-  --pullman-ink: #f3f4f2;
-  --band: #1b2126;         /* dark band behind hero/footer */
-  --band-fg: #eef0ee;
-  --band-muted: #a9b1b6;
+  --muted: #625a5b;        /* body secondary */
+  --line: #e7dfde;
+  --signal: #c8102e;       /* railroad crossing-signal red */
+  --signal-ink: #ffffff;   /* text on red */
+  --pullman: #9b0e24;      /* deep red CTA band */
+  --pullman-ink: #ffffff;
+  --band: #fdf1f1;         /* light red-tinted feature band */
+  --band-fg: #1f1a1b;
+  --band-muted: #6d5f60;
+  --foot: #2b1b1d;         /* footer: deep warm charcoal */
+  --foot-fg: #f6eeee;
+  --foot-muted: #c9b9ba;
 
   --display: "Big Shoulders Display", "Oswald", "Arial Narrow", Impact, sans-serif;
   --body: "IBM Plex Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -21,20 +24,7 @@
   --track: 1180px;
   --gutter: clamp(16px, 4vw, 40px);
   --radius: 4px;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --ink: #e9ecea; --paper: #111518; --surface: #181e22; --muted: #9aa4ab; --line: #2b3439;
-    --signal: #f0b02a; --signal-ink: #111518; --pullman: #2f7357; --pullman-ink: #eef0ee;
-    --band: #0b0e10; --band-fg: #eef0ee; --band-muted: #9aa4ab;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --ink: #e9ecea; --paper: #111518; --surface: #181e22; --muted: #9aa4ab; --line: #2b3439;
-  --signal: #f0b02a; --signal-ink: #111518; --pullman: #2f7357; --pullman-ink: #eef0ee;
-  --band: #0b0e10; --band-fg: #eef0ee; --band-muted: #9aa4ab;
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -116,6 +106,8 @@ section { padding-block: clamp(56px, 8vw, 104px); }
 .hero { padding-block: clamp(56px, 9vw, 120px) clamp(48px, 7vw, 88px); }
 .hero .wrap { display: grid; gap: 28px; }
 .hero h1 span { color: var(--signal); }
+.band-dark { border-bottom: 0; }
+.hero, .page-hero { background: linear-gradient(180deg, var(--surface) 0%, var(--band) 100%); }
 .hero .actions { display: flex; flex-wrap: wrap; gap: 12px; }
 .hero-meta { display: flex; flex-wrap: wrap; gap: 10px 28px; margin-top: 12px; font: 500 .85rem/1.4 var(--mono); color: var(--band-muted); letter-spacing: .04em; }
 .hero-meta b { color: var(--band-fg); font-weight: 700; }
@@ -187,11 +179,13 @@ td:first-child { font-weight: 700; white-space: nowrap; }
 /* Contact */
 .contact-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 40px; align-items: start; }
 @media (max-width: 860px) { .contact-grid { grid-template-columns: 1fr; } }
-.callbox { background: var(--band); color: var(--band-fg); border-radius: var(--radius); padding: 28px; display: grid; gap: 14px; }
+.callbox { background: var(--pullman); color: var(--pullman-ink); border-radius: var(--radius); padding: 28px; display: grid; gap: 14px; }
 .callbox .big { font: 700 clamp(1.6rem, 4vw, 2.2rem)/1.1 var(--mono); user-select: all; word-break: break-word; }
 .callbox .row { display: flex; flex-wrap: wrap; gap: 10px; }
-.callbox p { color: var(--band-muted); }
-.copy-btn { background: transparent; color: var(--band-fg); border: 2px solid color-mix(in srgb, var(--band-fg) 40%, transparent); }
+.callbox p { color: color-mix(in srgb, var(--pullman-ink) 85%, transparent); }
+.callbox .eyebrow { color: color-mix(in srgb, var(--pullman-ink) 80%, transparent); }
+.callbox .btn-signal { background: var(--surface); color: var(--pullman); }
+.copy-btn { background: transparent; color: var(--pullman-ink); border: 2px solid color-mix(in srgb, var(--pullman-ink) 55%, transparent); }
 .form { display: grid; gap: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: clamp(20px, 4vw, 32px); }
 .form .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 16px; }
 .field { display: grid; gap: 6px; }
@@ -201,13 +195,13 @@ td:first-child { font-weight: 700; white-space: nowrap; }
 .form-note { font-size: .92rem; padding: 12px 14px; border-radius: var(--radius); background: color-mix(in srgb, var(--signal) 18%, transparent); }
 
 /* Footer */
-.site-footer { background: var(--band); color: var(--band-fg); padding-block: 56px 32px; }
+.site-footer { background: var(--foot); color: var(--foot-fg); padding-block: 56px 32px; }
 .site-footer .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 32px; }
-.site-footer h4 { font: 600 .75rem/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--band-muted); margin: 0 0 14px; }
+.site-footer h4 { font: 600 .75rem/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--foot-muted); margin: 0 0 14px; }
 .site-footer ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.site-footer a { text-decoration: none; color: var(--band-fg); }
+.site-footer a { text-decoration: none; color: var(--foot-fg); }
 .site-footer a:hover { text-decoration: underline; }
-.site-footer .legal { margin-top: 44px; padding-top: 20px; border-top: 1px solid color-mix(in srgb, var(--band-muted) 30%, transparent); font-size: .85rem; color: var(--band-muted); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
+.site-footer .legal { margin-top: 44px; padding-top: 20px; border-top: 1px solid color-mix(in srgb, var(--foot-muted) 30%, transparent); font-size: .85rem; color: var(--foot-muted); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
 .site-footer .phone-lg { font: 700 1.35rem/1.2 var(--mono); }
 @media (max-width: 480px) {
   .brand-name { font-size: 1.25rem; }
