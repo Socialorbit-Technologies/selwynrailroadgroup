@@ -1,0 +1,41 @@
+name: Fetch stock photos (one-time)
+on:
+  push:
+    branches: [fetch-images]
+    paths: ['.github/workflows/fetch-images.yml']
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download and resize Pexels photos
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick webp >/dev/null
+          mkdir -p images
+          : > images/fetch-report.txt
+          IDS="11560584 19191712 9726933 31409984 7359567 12032974 3377214 14776388 30412599 5742831 30858911 11679518 11455148 3377223 19892287 7862726 12030424 33337641"
+          UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
+          for id in $IDS; do
+            url="https://images.pexels.com/photos/$id/pexels-photo-$id.jpeg?auto=compress&cs=tinysrgb&w=2000"
+            code=$(curl -sL -A "$UA" -o raw-$id.jpg -w "%{http_code}" "$url")
+            type=$(file -b --mime-type raw-$id.jpg 2>/dev/null)
+            if [ "$code" = "200" ] && [ "${type#image/}" != "$type" ]; then
+              convert raw-$id.jpg -auto-orient -strip -resize '1920x1920>' -quality 78 -interlace Plane images/pexels-$id.jpg
+              convert raw-$id.jpg -auto-orient -strip -resize '480x480>' -quality 70 images/thumb-$id.jpg
+              dims=$(identify -format '%wx%h' images/pexels-$id.jpg)
+              echo "$id OK $dims $(stat -c%s images/pexels-$id.jpg)" >> images/fetch-report.txt
+            else
+              echo "$id FAIL http=$code type=$type" >> images/fetch-report.txt
+            fi
+            rm -f raw-$id.jpg
+          done
+          cat images/fetch-report.txt
+      - name: Commit images
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add images
+          git commit -m "Add stock photos from Pexels (free license)" || true
+          git push
