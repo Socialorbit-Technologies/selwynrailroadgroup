@@ -1,1 +1,7 @@
-Run at Fri Oct  9 20:34:05 UTC 2026. Host length: 14. Target dir: public_html
+Run at Fri Oct  9 20:35:37 UTC 2026. Host length: 14. Target dir: public_html
+--- mode [set ftp:ssl-force true; set ftp:ssl-protect-data true; set ssl:verify-certificate no] rc=0
+<redacted>
+public_html/./
+public_html/../
+public_html/selwyn-rail-road.zip
+wp-config.php not in public_html. Not the WordPress site. Nothing deleted.
