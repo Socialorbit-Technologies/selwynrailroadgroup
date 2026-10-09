@@ -28,6 +28,7 @@ jobs:
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
           FTP_SERVER_DIR: ${{ vars.FTP_SERVER_DIR || 'public_html/' }}
         run: |
+          set +e
           LOG=cleanup-log.txt
           : > $LOG
           log(){ echo "$*" | tee -a $LOG; }
@@ -62,6 +63,7 @@ jobs:
           CMDS="$CMDS; put wp-htaccess -o $DIR/.htaccess; cls -1a $DIR"
           run_lftp "$CMDS" | sed -E 's/[^ ]*@[^ ]*/<redacted>/g' >> $LOG
           log "Cleanup finished."
+          exit 0
 
       - name: Save log to branch
         if: always()
