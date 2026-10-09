@@ -3,55 +3,72 @@ name: Undo accidental upload to selwynfirecompany.com
 # One-time cleanup. Runs only when the `cleanup-firecompany` branch is pushed.
 # Removes the Selwyn Rail Road files that were uploaded by mistake into
 # selwynfirecompany.com's public_html, and restores a standard WordPress .htaccess.
+# Writes a log (no passwords) to cleanup-log.txt on this branch.
 on:
   push:
     branches: [cleanup-firecompany]
+    paths: ['.github/workflows/cleanup-firecompany.yml']
+
+permissions:
+  contents: write
 
 jobs:
   cleanup:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Install lftp
         run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
-
-      - name: Write standard WordPress .htaccess
-        run: |
-          cat > wp-htaccess <<'EOF'
-          # BEGIN WordPress
-          <IfModule mod_rewrite.c>
-          RewriteEngine On
-          RewriteBase /
-          RewriteRule ^index\.php$ - [L]
-          RewriteCond %{REQUEST_FILENAME} !-f
-          RewriteCond %{REQUEST_FILENAME} !-d
-          RewriteRule . /index.php [L]
-          </IfModule>
-          # END WordPress
-          EOF
-          sed -i 's/^          //' wp-htaccess
-          cat wp-htaccess
 
       - name: Safety check and cleanup
         env:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_SERVER_DIR: ${{ vars.FTP_SERVER_DIR || 'public_html/' }}
         run: |
-          set -e
-          LFTP_OPTS="set ftp:ssl-allow true; set ftp:ssl-force true; set ssl:verify-certificate no; set net:max-retries 2; set net:timeout 20"
-          DIR="public_html"
+          LOG=cleanup-log.txt
+          : > $LOG
+          log(){ echo "$*" | tee -a $LOG; }
+          HOST="${FTP_SERVER#ftp://}"; HOST="${HOST#ftps://}"; HOST="${HOST%/}"
+          DIR="${FTP_SERVER_DIR%/}"; [ "$DIR" = "." ] && DIR="."
+          log "Run at $(date -u). Host length: ${#HOST}. Target dir: $DIR"
 
-          # 1) Confirm this is the WordPress site and that index.html is our Rail Road page.
-          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER" -e "$LFTP_OPTS; cls -1 $DIR/wp-config.php; get $DIR/index.html -o index-on-server.html; bye" > check.txt 2>&1 || { cat check.txt; echo "Safety check failed: could not read the expected files. Nothing deleted."; exit 1; }
-          grep -q "wp-config.php" check.txt || { echo "wp-config.php not found in $DIR. Not the WordPress site. Nothing deleted."; exit 1; }
-          grep -q "Selwyn Rail Road" index-on-server.html || { echo "index.html is not the Selwyn Rail Road page. Nothing deleted."; exit 1; }
-          echo "Safety check passed: WordPress site with the mistaken Selwyn Rail Road index.html."
+          printf '%s\n' '# BEGIN WordPress' '<IfModule mod_rewrite.c>' 'RewriteEngine On' 'RewriteBase /' 'RewriteRule ^index\.php$ - [L]' 'RewriteCond %{REQUEST_FILENAME} !-f' 'RewriteCond %{REQUEST_FILENAME} !-d' 'RewriteRule . /index.php [L]' '</IfModule>' '# END WordPress' > wp-htaccess
 
-          # 2) Delete exactly the files the deploy uploaded, then restore .htaccess.
-          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER" -e "$LFTP_OPTS; set cmd:fail-exit false; \
-            rm $DIR/index.html; rm $DIR/about.html; rm $DIR/services.html; rm $DIR/careers.html; rm $DIR/contact.html; \
-            rm $DIR/404.html; rm $DIR/styles.css; rm $DIR/script.js; rm $DIR/favicon.svg; rm $DIR/robots.txt; \
-            rm $DIR/sitemap.xml; rm $DIR/.ftp-deploy-sync-state.json; \
-            put wp-htaccess -o $DIR/.htaccess; \
-            cls -1a $DIR; bye"
-          echo "Cleanup finished."
+          run_lftp(){ lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$HOST" -e "$MODE; set net:max-retries 2; set net:timeout 20; set net:reconnect-interval-base 3; $1; bye" 2>&1; }
+
+          # Pick a working connection mode: FTPS first, then plain FTP.
+          MODE=""
+          for M in "set ftp:ssl-force true; set ftp:ssl-protect-data true; set ssl:verify-certificate no" "set ftp:ssl-allow false"; do
+            MODE="$M"
+            OUT=$(run_lftp "pwd; cls -1a $DIR") ; RC=$?
+            log "--- mode [$M] rc=$RC"; echo "$OUT" | sed -E 's/[^ ]*@[^ ]*/<redacted>/g' | head -60 >> $LOG
+            [ $RC -eq 0 ] && break
+            MODE=""
+          done
+          if [ -z "$MODE" ]; then log "Could not connect or list $DIR. Nothing deleted."; exit 1; fi
+
+          # Safety checks.
+          echo "$OUT" | grep -qx "wp-config.php" || echo "$OUT" | grep -q "/wp-config.php$" || { log "wp-config.php not in $DIR. Not the WordPress site. Nothing deleted."; exit 1; }
+          run_lftp "get $DIR/index.html -o index-on-server.html" >> $LOG
+          grep -q "Selwyn Rail Road" index-on-server.html || { log "index.html is not the Selwyn Rail Road page. Nothing deleted."; exit 1; }
+          log "Safety check passed."
+
+          # Delete exactly the uploaded files, restore .htaccess, list result.
+          CMDS="set cmd:fail-exit false"
+          for f in index.html about.html services.html careers.html contact.html 404.html styles.css script.js favicon.svg robots.txt sitemap.xml .ftp-deploy-sync-state.json; do CMDS="$CMDS; rm $DIR/$f"; done
+          CMDS="$CMDS; put wp-htaccess -o $DIR/.htaccess; cls -1a $DIR"
+          run_lftp "$CMDS" | sed -E 's/[^ ]*@[^ ]*/<redacted>/g' >> $LOG
+          log "Cleanup finished."
+
+      - name: Save log to branch
+        if: always()
+        run: |
+          [ -f cleanup-log.txt ] || echo "no log" > cleanup-log.txt
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add cleanup-log.txt
+          git commit -m "Cleanup log" || true
+          git push || true
