@@ -1,0 +1,57 @@
+name: Undo accidental upload to selwynfirecompany.com
+
+# One-time cleanup. Runs only when the `cleanup-firecompany` branch is pushed.
+# Removes the Selwyn Rail Road files that were uploaded by mistake into
+# selwynfirecompany.com's public_html, and restores a standard WordPress .htaccess.
+on:
+  push:
+    branches: [cleanup-firecompany]
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      - name: Write standard WordPress .htaccess
+        run: |
+          cat > wp-htaccess <<'EOF'
+          # BEGIN WordPress
+          <IfModule mod_rewrite.c>
+          RewriteEngine On
+          RewriteBase /
+          RewriteRule ^index\.php$ - [L]
+          RewriteCond %{REQUEST_FILENAME} !-f
+          RewriteCond %{REQUEST_FILENAME} !-d
+          RewriteRule . /index.php [L]
+          </IfModule>
+          # END WordPress
+          EOF
+          sed -i 's/^          //' wp-htaccess
+          cat wp-htaccess
+
+      - name: Safety check and cleanup
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          set -e
+          LFTP_OPTS="set ftp:ssl-allow true; set ftp:ssl-force true; set ssl:verify-certificate no; set net:max-retries 2; set net:timeout 20"
+          DIR="public_html"
+
+          # 1) Confirm this is the WordPress site and that index.html is our Rail Road page.
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER" -e "$LFTP_OPTS; cls -1 $DIR/wp-config.php; get $DIR/index.html -o index-on-server.html; bye" > check.txt 2>&1 || { cat check.txt; echo "Safety check failed: could not read the expected files. Nothing deleted."; exit 1; }
+          grep -q "wp-config.php" check.txt || { echo "wp-config.php not found in $DIR. Not the WordPress site. Nothing deleted."; exit 1; }
+          grep -q "Selwyn Rail Road" index-on-server.html || { echo "index.html is not the Selwyn Rail Road page. Nothing deleted."; exit 1; }
+          echo "Safety check passed: WordPress site with the mistaken Selwyn Rail Road index.html."
+
+          # 2) Delete exactly the files the deploy uploaded, then restore .htaccess.
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER" -e "$LFTP_OPTS; set cmd:fail-exit false; \
+            rm $DIR/index.html; rm $DIR/about.html; rm $DIR/services.html; rm $DIR/careers.html; rm $DIR/contact.html; \
+            rm $DIR/404.html; rm $DIR/styles.css; rm $DIR/script.js; rm $DIR/favicon.svg; rm $DIR/robots.txt; \
+            rm $DIR/sitemap.xml; rm $DIR/.ftp-deploy-sync-state.json; \
+            put wp-htaccess -o $DIR/.htaccess; \
+            cls -1a $DIR; bye"
+          echo "Cleanup finished."
