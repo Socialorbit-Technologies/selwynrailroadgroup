@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /preview-a.html
+Disallow: /preview-b.html
 
 Sitemap: https://selwynrailroadgroup.com/sitemap.xml
