@@ -1,8 +1,8 @@
 name: Deploy to selwynrailroadgroup.com
 
-# Automatic deploys are OFF until the FTP account points at the selwynrailroadgroup.com folder.
-# The previous FTP account opened in selwynfirecompany.com's folder and overwrote that site.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
@@ -15,6 +15,22 @@ jobs:
     steps:
       - name: Check out the site
         uses: actions/checkout@v4
+
+      - name: Guard - refuse to upload into another site's folder
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          TARGET: ${{ vars.FTP_SERVER_DIR || 'public_html/' }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+          HOST="${FTP_SERVER#ftp://}"; HOST="${HOST#ftps://}"; HOST="${HOST%/}"
+          LIST=$(lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$HOST" -e "set ftp:ssl-force true; set ssl:verify-certificate no; set net:max-retries 2; set net:timeout 20; cls -1 $TARGET; bye" 2>&1) || { echo "Could not list $TARGET on the server."; exit 1; }
+          echo "$LIST" | sed 's#.*/##'
+          if echo "$LIST" | grep -qE '(^|/)(wp-config\.php|wp-login\.php|wp-content/?)$'; then
+            echo "STOP: $TARGET contains a WordPress site. This is not the selwynrailroadgroup.com folder. Nothing uploaded."
+            exit 1
+          fi
 
       - name: Upload over FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
